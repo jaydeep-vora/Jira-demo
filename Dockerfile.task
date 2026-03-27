@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY . .
+COPY services/task ./services/task
+COPY routes/taskRoutes.js ./routes/taskRoutes.js
+COPY controllers/taskController.js ./controllers/taskController.js
+COPY middleware ./middleware
+COPY utils ./utils
+COPY config ./config
+COPY models ./models
+
+ENV NODE_ENV=production
+ENV PORT=3002
+
+EXPOSE 3002
+
+CMD ["node", "services/task/server.js"]

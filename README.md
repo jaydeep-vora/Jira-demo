@@ -86,6 +86,36 @@ Jira/
    npm start
    ```
 
+## Docker (gateway + microservices)
+
+This repo is a single codebase, and Compose runs:
+
+- **Gateway service**: public entrypoint on port **3000**
+- **Auth service**: internal service for `GET/POST /api/auth/*`
+- **Task service**: internal service for `GET/POST/PUT/DELETE /api/tasks/*`
+
+### Run with Compose
+
+1) (Recommended) Create `.env` (Compose will also fall back to defaults):
+
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `JWT_SECRET`
+- `AES_SECRET_KEY`
+- `DB_SYNC` (optional; in `docker-compose.yml` auth runs it by default, task does not)
+- `DB_SYNC_ALTER` (optional; set to `true` only if you want `sequelize.sync({ alter: true })`)
+
+2) Start:
+
+```bash
+docker compose up --build
+```
+
+3) Verify:
+
+- `GET http://localhost:3000/api/health` (gateway health)
+- `POST http://localhost:3000/api/auth/login` (proxied to auth service)
+- `GET http://localhost:3000/api/tasks` (proxied to task service)
+
 ## API Endpoints
 
 ### Authentication

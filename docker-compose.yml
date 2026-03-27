@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  gateway:
+    image: jaydeepvora/gateway:latest
+    restart: unless-stopped 
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth:3001
+      TASK_SERVICE_URL: http://task:3002
+    depends_on:
+      auth:
+        condition: service_started
+      task:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-jira_app}
+      POSTGRES_USER: ${DB_USER:-jira_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}    
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` defaults the database name to the user name.
+      # Since we create `DB_NAME` (e.g. `jira_app`) but not a DB named `DB_USER` (e.g. `jira_user`),
+      # explicitly pass `-d` so the healthcheck doesn't fail with:
+      # "FATAL: database \"jira_user\" does not exist".
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-jira_user} -d ${DB_NAME:-jira_app}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  auth:
+    image: jaydeepvora/jira-auth:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_SYNC: "true"
+
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-jira_app}
+      DB_USER: ${DB_USER:-jira_user}
+      DB_PASSWORD: ${DB_PASSWORD:-password123}
+
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      AES_SECRET_KEY: ${AES_SECRET_KEY:-change_me}
+    depends_on:
+      db:
+        condition: service_healthy
+  task:
+    image: jaydeepvora/jira-task:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      DB_SYNC: "false"
+
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-jira_app}
+      DB_USER: ${DB_USER:-jira_user}
+      DB_PASSWORD: ${DB_PASSWORD:-password123}
+
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      AES_SECRET_KEY: ${AES_SECRET_KEY:-change_me}
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  db_data:

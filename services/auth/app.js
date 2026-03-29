@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/api/health', (_req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     success: true,
     service: 'auth',

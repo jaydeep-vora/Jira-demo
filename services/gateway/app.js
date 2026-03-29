@@ -27,10 +27,6 @@ app.get('/api/health', (_req, res) => {
   res.json({
     success: true,
     service: 'gateway',
-    routes: {
-      auth: AUTH_SERVICE_URL,
-      task: TASK_SERVICE_URL
-    },
     timestamp: new Date().toISOString()
   });
 });

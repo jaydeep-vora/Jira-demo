@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   gateway:
-    image: jaydeepvora/jira-gateway:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
     restart: unless-stopped 
     environment:
       NODE_ENV: production
@@ -37,7 +39,9 @@ services:
       retries: 5
 
   auth:
-    image: jaydeepvora/jira-auth:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -58,7 +62,9 @@ services:
         condition: service_healthy
 
   task:
-    image: jaydeepvora/jira-task:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.task
     restart: unless-stopped
     environment:
       NODE_ENV: production

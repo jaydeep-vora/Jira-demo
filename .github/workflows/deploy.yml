@@ -1,0 +1,51 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # 1. Checkout code
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # 2. Login to Docker Hub
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # 3. Build & Push Gateway
+    - name: Build & Push Gateway
+      run: |
+        docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/gateway -f Dockerfile.gateway --push .
+
+    # 4. Build & Push Auth
+    - name: Build & Push Auth
+      run: |
+        docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/auth -f Dockerfile.auth --push .
+
+    # 5. Build & Push Task
+    - name: Build & Push Task
+      run: |
+        docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/task -f Dockerfile.task --push .
+
+    # 6. Deploy to EC2
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd my-app
+          docker-compose pull
+          docker-compose down
+          docker-compose up -d

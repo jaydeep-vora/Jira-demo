@@ -22,6 +22,14 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/api/health', (_req, res) => {
+  res.json({
+    success: true,
+    service: 'auth',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use(decryptRequestBody);
 app.use(encryptResponseBody);
 
@@ -35,14 +43,6 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
-
-app.get('/api/health', (_req, res) => {
-  res.json({
-    success: true,
-    service: 'auth',
-    timestamp: new Date().toISOString()
-  });
-});
 
 app.use((req, res) => {
   res.status(404).json({

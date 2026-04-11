@@ -12,11 +12,23 @@ app.use(cors());
 const authProxy = createProxyMiddleware({
   target: AUTH_SERVICE_URL,
   changeOrigin: true,
-  ws: true,
+  // Auth service does NOT need WebSocket support
+  ws: false,
   logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn'
 });
 
+// HTTP-only proxy for task REST API routes
 const taskProxy = createProxyMiddleware({
+  target: TASK_SERVICE_URL,
+  changeOrigin: true,
+  // Disable ws here — we handle WebSocket upgrades separately below
+  ws: false,
+  logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn'
+});
+
+// Dedicated WebSocket proxy for Socket.IO
+// Setting ws: true ONLY on this proxy avoids conflicts with other proxies
+const socketProxy = createProxyMiddleware({
   target: TASK_SERVICE_URL,
   changeOrigin: true,
   ws: true,
@@ -31,6 +43,9 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Socket.IO proxy must be registered BEFORE other routes
+// This handles the HTTP handshake portion of Socket.IO
+app.use('/socket.io', socketProxy);
 app.use('/api/auth', authProxy);
 app.use('/api/tasks', taskProxy);
 

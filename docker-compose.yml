@@ -1,11 +1,9 @@
-version: "3.9"
-
 services:
   gateway:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.gateway
-    image: jaydeepvora/gateway:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    # image: jaydeepvora/gateway:latest
     restart: unless-stopped 
     environment:
       NODE_ENV: production
@@ -17,6 +15,8 @@ services:
         condition: service_started
       task:
         condition: service_started
+    ports:
+      - "3000:3000"
 
   db:
     image: postgres:16-alpine
@@ -38,10 +38,10 @@ services:
       retries: 5
 
   auth:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.auth
-    image: jaydeepvora/auth:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    # image: jaydeepvora/auth:latest
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -62,10 +62,10 @@ services:
         condition: service_healthy
 
   task:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.task
-    image: jaydeepvora/task:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.task
+    # image: jaydeepvora/task:latest
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -83,7 +83,6 @@ services:
       AES_SECRET_KEY: ${AES_SECRET_KEY:-change_me}
     depends_on:
       db:
-        condition: service_healthy
-      
+        condition: service_healthy      
 volumes:
   db_data:

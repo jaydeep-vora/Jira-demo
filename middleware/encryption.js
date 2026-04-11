@@ -10,8 +10,9 @@ const decryptRequestBody = (req, res, next) => {
     // Only handle JSON bodies that follow the { payload } convention
     
     if (req.body && typeof req.body.payload === 'string') {
-      console.log('Param', req.body.payload);
+      console.log('Payload', req.body.payload);
       const decrypted = decryptFromBase64(req.body.payload);
+      console.log('Decrypted Payload', decrypted);
       try {
         req.body = JSON.parse(decrypted);
       } catch (parseErr) {
@@ -49,6 +50,7 @@ const encryptResponseBody = (req, res, next) => {
       }
 
       const payloadString = JSON.stringify(body);
+      console.log('Original Response Body', payloadString, req.originalUrl);
       const encrypted = encryptToBase64(payloadString);
 
       res.setHeader('X-Encrypted', '1');

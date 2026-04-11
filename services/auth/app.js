@@ -41,8 +41,8 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-app.use('/api', apiLimiter);
-app.use('/api/auth', authRoutes);
+app.use(apiLimiter);
+app.use('/', authRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

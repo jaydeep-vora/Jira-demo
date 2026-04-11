@@ -1,5 +1,5 @@
 const { Task } = require('../models');
-const { getIO } = require('../socket');
+const { emit } = require('../socket');
 
 const createTask = async (req, res) => {
   try {
@@ -25,13 +25,7 @@ const createTask = async (req, res) => {
       assigneeId: assigneeId || req.user.id
     });
 
-    try { 
-      const io = getIO();
-      io.emit('task:created', { task: task.toJSON() });
-    } catch (socketError) {
-      // Socket not initialized or other socket error - do not break API
-      console.error('Socket emit error (task:created):', socketError.message);
-    }
+    emit('task:created', { task: task.toJSON() });
 
     res.status(201).json({
       success: true,
@@ -122,12 +116,7 @@ const updateTask = async (req, res) => {
       assigneeId: assigneeId !== undefined ? assigneeId : task.assigneeId
     });
 
-    try {
-      const io = getIO();
-      io.emit('task:updated', { task: task.toJSON() });
-    } catch (socketError) {
-      console.error('Socket emit error (task:updated):', socketError.message);
-    }
+    emit('task:updated', { task: task.toJSON() });
 
     res.json({
       success: true,
@@ -163,12 +152,7 @@ const deleteTask = async (req, res) => {
 
     await task.destroy();
 
-    try {
-      const io = getIO();
-      io.emit('task:deleted', { id });
-    } catch (socketError) {
-      console.error('Socket emit error (task:deleted):', socketError.message);
-    }
+    emit('task:deleted', { id });
 
     res.json({
       success: true,

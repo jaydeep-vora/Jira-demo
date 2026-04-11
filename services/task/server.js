@@ -4,6 +4,7 @@ const http = require('http');
 const app = require('./app');
 const { testConnection, sequelize } = require('../../config/database');
 const { syncModels } = require('../../models');
+const { initSocket } = require('../../socket');
 
 const PORT = process.env.PORT || 3002;
 
@@ -19,6 +20,7 @@ const startServer = async () => {
     }
 
     const server = http.createServer(app);
+    initSocket(server);
 
     server.listen(PORT, () => {
       console.log(`🚀 Task service running on port ${PORT}`);

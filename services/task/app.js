@@ -1,25 +1,19 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { graphqlHTTP } = require('express-graphql');
 
 const taskRoutes = require('../../routes/taskRoutes');
 const errorHandler = require('../../middleware/errorHandler');
 const { decryptRequestBody, encryptResponseBody } = require('../../middleware/encryption');
 const { apiLimiter } = require('../../middleware/rateLimiter');
+const { schema, root } = require('../../graphql/schema');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Welcome to Jira Task API',
-    version: '1.0.0'
-  });
-});
 
 app.get('/health', (_req, res) => {
   res.json({
@@ -39,8 +33,18 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-app.use('/api', apiLimiter);
-app.use('/api/tasks', taskRoutes);
+app.use(apiLimiter);
+
+app.use(
+  '/graphql',
+  graphqlHTTP({
+    schema,
+    rootValue: root,
+    graphiql: true
+  })
+);
+
+app.use('/', taskRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

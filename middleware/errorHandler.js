@@ -1,5 +1,28 @@
+const multer = require('multer');
+
 const errorHandler = (err, req, res, next) => {
   console.error('Error:', err);
+
+  // Multer file upload errors
+  if (err instanceof multer.MulterError) {
+    const messages = {
+      LIMIT_FILE_SIZE: 'File is too large. Maximum size is 2 MB',
+      LIMIT_FILE_COUNT: 'Too many files. Only one file is allowed',
+      LIMIT_UNEXPECTED_FILE: 'Unexpected field name. Use "file" as the form field name'
+    };
+    return res.status(400).json({
+      success: false,
+      message: messages[err.code] || err.message
+    });
+  }
+
+  // Multer fileFilter custom errors (thrown as plain Error)
+  if (err.message && (err.message.includes('.csv') || err.message.includes('MIME type'))) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
 
   // Sequelize validation errors
   if (err.name === 'SequelizeValidationError') {

@@ -1,5 +1,6 @@
-const { Task } = require('../models');
+const { Task, sequelize } = require('../models');
 const { emit } = require('../socket');
+const { parseTasksCSV } = require('../utils/csvParser');
 
 const createTask = async (req, res) => {
   try {
@@ -168,11 +169,77 @@ const deleteTask = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/tasks/upload
+ * Accepts a multipart/form-data request with a single .csv file (field name: "file").
+ * Parses the CSV, validates each row, and bulk-creates tasks inside a transaction.
+ */
+const uploadTasks = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please attach a .csv file with field name "file"'
+      });
+    }
+
+    // Parse and validate CSV rows
+    const { tasks, errors } = parseTasksCSV(req.file.buffer);
+    
+    console.log('Total Task parsed:', tasks.length);
+
+    if (tasks.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid tasks found in the CSV file',
+        errors
+      });
+    }
+
+    // Stamp every task with the authenticated user as creator
+    const taskRecords = tasks.map((t) => ({
+      ...t,
+      userId: req.user.id,
+      assigneeId: t.assigneeId || req.user.id
+    }));
+
+    // Bulk insert inside a transaction so it's all-or-nothing
+    const createdTasks = await sequelize.transaction(async (t) => {
+      return Task.bulkCreate(taskRecords, { transaction: t, validate: true });
+    });
+
+    console.log("Total task inserted:", createdTasks.length);
+
+    // Emit socket events for each created task
+    createdTasks.forEach((task) => {
+      emit('task:created', { task: task.toJSON() });
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `${createdTasks.length} task(s) created successfully`,
+      data: {
+        created: createdTasks.length,
+        tasks: createdTasks.map((task) => task.toJSON()),
+        ...(errors.length > 0 && { skippedErrors: errors })
+      }
+    });
+  } catch (error) {
+    console.error('Upload tasks error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing CSV upload',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,
   getTaskById,
   updateTask,
-  deleteTask
+  deleteTask,
+  uploadTasks
 };
 

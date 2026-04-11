@@ -18,6 +18,8 @@ A Jira-like task management API built with Node.js and Express. It exposes both 
 | API              | REST + GraphQL (`express-graphql`)|
 | Validation       | express-validator                 |
 | Rate Limiting    | express-rate-limit                |
+| File Upload      | Multer (memory storage)           |
+| CSV Parsing      | csv-parse                         |
 | Reverse Proxy    | http-proxy-middleware              |
 | Containerization | Docker + Docker Compose           |
 
@@ -49,8 +51,9 @@ Jira/
 ├── middleware/
 │   ├── auth.js               # JWT verification + user lookup
 │   ├── encryption.js         # AES-256-GCM request decrypt / response encrypt
-│   ├── errorHandler.js       # Sequelize-aware error handler
+│   ├── errorHandler.js       # Sequelize + Multer aware error handler
 │   ├── rateLimiter.js        # 100 req/hr per IP
+│   ├── upload.js             # Multer config for CSV file uploads
 │   └── validation.js         # express-validator rules for register/login
 │
 ├── graphql/
@@ -58,6 +61,7 @@ Jira/
 │
 ├── utils/
 │   ├── crypto.js             # AES-256-GCM encrypt/decrypt helpers
+│   ├── csvParser.js          # CSV parsing and row validation for task import
 │   └── jwt.js                # Token generation and verification
 │
 ├── services/                 # Microservice entry points (reuse shared code)
@@ -244,13 +248,14 @@ errorHandler                ← Sequelize-aware, returns structured JSON
 
 #### Tasks (`/api/tasks`)
 
-| Method | Path              | Auth | Description          |
-| ------ | ----------------- | ---- | -------------------- |
-| POST   | `/api/tasks`      | JWT  | Create a task        |
-| GET    | `/api/tasks`      | JWT  | List all tasks       |
-| GET    | `/api/tasks/:id`  | JWT  | Get task by ID       |
-| PUT    | `/api/tasks/:id`  | JWT  | Update a task        |
-| DELETE | `/api/tasks/:id`  | JWT  | Delete a task        |
+| Method | Path                | Auth | Description                        |
+| ------ | ------------------- | ---- | ---------------------------------- |
+| POST   | `/api/tasks`        | JWT  | Create a task                      |
+| GET    | `/api/tasks`        | JWT  | List all tasks                     |
+| POST   | `/api/tasks/upload` | JWT  | Bulk create tasks from CSV upload  |
+| GET    | `/api/tasks/:id`    | JWT  | Get task by ID                     |
+| PUT    | `/api/tasks/:id`    | JWT  | Update a task                      |
+| DELETE | `/api/tasks/:id`    | JWT  | Delete a task                      |
 
 #### Utility
 
